@@ -1,109 +1,131 @@
-# 觀影筆記｜YouTube 繁體中文摘要 App
+# YouTube Summary App
 
-把 YouTube 單支影片、播放清單或頻道頁面轉成具良好閱讀層次的繁體中文摘要。貼上網址後按 Enter 或「開始整理」；頻道網址會取最新四支非直播影片。
+A Windows-friendly local app that turns a YouTube video, playlist, or a channel's latest four non-live uploads into readable Traditional Chinese notes.
 
-## 使用情境
+The repository contains two complete implementations:
 
-- 快速掌握長篇訪談、教學與市場分析影片
-- 將同一頻道的最新內容整理成可掃讀筆記
-- 保留原片連結、關鍵數字及不確定語氣，方便回看查證
+- **`codex-cli/` — recommended:** no OpenAI API key. It uses Codex CLI and the user's ChatGPT account.
+- **`legacy-api/` — archived:** the original OpenAI API version for users who prefer usage-based API billing.
 
-## 功能
+## Use cases
 
-- 支援一般影片、Shorts、播放清單與頻道影片頁
-- 自動排除正在直播或即將直播的項目
-- 優先讀取繁體中文、中文或英文公開字幕
-- 透過 OpenAI Responses API 產生結構化繁中摘要
-- 響應式閱讀介面，支援滑鼠與 Enter 提交
-- API Key 只在請求期間使用，不寫入磁碟
+- Scan long interviews, tutorials, and market commentary before deciding what to watch.
+- Review a creator's latest four uploads while excluding live and upcoming streams.
+- Preserve important numbers, uncertainty, and links back to the original videos.
 
-## 架構
+## Recommended features
+
+- One-click Windows setup through `codex-cli/start.cmd`
+- ChatGPT browser sign-in via official Codex CLI; no API key field
+- Video, Shorts, playlist, and channel URL support
+- Public transcript discovery in Traditional Chinese, Chinese, or English
+- Structured output with overview, per-video summary, key points, and takeaway
+- Responsive Traditional Chinese reading interface
+- Read-only, ephemeral Codex execution with a JSON output schema
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    A["貼上 YouTube 網址"] --> B["Flask 本機服務"]
-    B --> C["yt-dlp 解析影片清單與 metadata"]
-    C --> D["YouTube Transcript API 取得公開字幕"]
-    D --> E["OpenAI Responses API 產生結構化繁中摘要"]
-    E --> F["閱讀友善的卡片式介面"]
+    A["YouTube URL"] --> B["Flask local app"]
+    B --> C["yt-dlp video discovery"]
+    C --> D["Public transcript retrieval"]
+    D --> E["Codex CLI via stdin"]
+    E --> F["Schema-validated JSON"]
+    F --> G["Readable Traditional Chinese UI"]
 ```
 
-## 專案結構
+The fixed summarization instruction is passed as the `codex exec` prompt. Transcript JSON arrives through stdin as untrusted context. Codex runs with `--sandbox read-only`, `--ephemeral`, `--ignore-user-config`, and `--ignore-rules`.
+
+## Folder tree
 
 ```text
 .
-├─ app.py                 # Flask 入口與本機啟動
-├─ src/
-│  ├─ youtube.py          # 網址驗證、影片探索、字幕讀取
-│  └─ summarizer.py       # 提示詞、OpenAI 呼叫與結果補充
-├─ static/                # CSS 與前端互動
-├─ templates/             # 主介面
-├─ tests/                 # 單元與 API 測試
-├─ docs/                  # Medium 與作品集內容
-├─ start.cmd              # Windows 雙擊啟動器
-└─ requirements.txt
+├─ codex-cli/             # Recommended, ChatGPT-authenticated version
+│  ├─ app.py
+│  ├─ start.cmd           # Setup, login, and launch
+│  ├─ summary-schema.json
+│  ├─ src/
+│  ├─ static/
+│  ├─ templates/
+│  └─ tests/
+├─ legacy-api/            # Original API-key version
+├─ docs/
+│  ├─ medium-article.md
+│  └─ portfolio.md
+├─ LICENSE
+└─ README.md
 ```
 
-## 安裝與啟動
+## Fastest Windows setup
 
-### Windows：雙擊啟動
+Prerequisites:
 
-1. 安裝 Python 3.11 以上版本。
-2. 雙擊 `start.cmd`。第一次執行會建立 `.venv` 並安裝套件。
-3. 瀏覽器會自動開啟 `http://127.0.0.1:8765`。
-4. 展開「API 設定」輸入 OpenAI API Key，或先設定 `OPENAI_API_KEY`。
+1. A ChatGPT plan/workspace with Codex access.
+2. Python 3.11 or newer.
+3. Node.js LTS only when Codex CLI is not already available.
 
-### 命令列
+Then:
+
+1. Download or clone this repository.
+2. Open `codex-cli`.
+3. Double-click `start.cmd`.
+4. On the first run, complete the browser-based ChatGPT sign-in.
+5. Paste a YouTube URL and press Enter.
+
+The launcher creates a private Python environment, installs dependencies, detects a working Codex executable, installs the official `@openai/codex` package if necessary, checks login status, and starts the local interface.
+
+## Command-line setup
 
 ```powershell
+git clone https://github.com/phyop/YT_Summary_App.git
+cd YT_Summary_App\codex-cli
 py -3 -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-$env:OPENAI_API_KEY="your-key"
-python app.py
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+npm install -g @openai/codex
+codex login
+.venv\Scripts\python.exe app.py
 ```
 
-## 使用方式
+If the Microsoft Store Codex executable shadows the npm CLI on Windows, the launcher automatically prefers `%APPDATA%\npm\codex.cmd`. Advanced users may set `CODEX_CLI_PATH` to a known working executable.
 
-貼入以下任一格式：
+## Safety model
 
-```text
-https://www.youtube.com/watch?v=VIDEO_ID
-https://youtu.be/VIDEO_ID
-https://www.youtube.com/@CHANNEL/videos
-https://www.youtube.com/playlist?list=PLAYLIST_ID
-```
+- The recommended version stores no API keys.
+- Codex CLI owns authentication and caches credentials in its normal OS credential location. This repository never reads or copies those credentials.
+- Transcript text is sent to Codex/OpenAI under the signed-in user's Codex entitlement.
+- The local server listens only on `127.0.0.1`.
+- Codex runs in read-only, ephemeral mode and receives a schema-constrained task.
+- Transcript content is explicitly treated as untrusted data, not instructions.
+- Credentials, virtual environments, caches, and runtime output are ignored by Git.
 
-按 Enter 或點擊「開始整理」。頻道與播放清單預設處理前四支可用影片。
-
-## 安全與隱私模型
-
-- 專案不包含任何 API Key、Cookie、OAuth 檔案或使用者資料。
-- 介面輸入的 API Key 不存到 localStorage、檔案或資料庫，但會隨摘要請求送到本機 Flask，再由 Flask 呼叫 OpenAI。
-- 本機服務只監聽 `127.0.0.1`，不對區域網路公開。
-- 字幕與影片資訊會傳給 OpenAI 產生摘要；不適合處理機密或未授權內容。
-- 只讀取 YouTube 提供的公開字幕，不下載影音檔。
-
-## 測試
+## Validation
 
 ```powershell
-pip install pytest
-pytest -q
+cd codex-cli
+python -m pytest -q
 python -m compileall app.py src tests
 ```
 
-測試涵蓋健康檢查、輸入驗證、API Key 缺漏、成功回應、YouTube 網址解析及非 YouTube 網址拒絕。
+Validation includes URL parsing, unavailable-executable fallback, ChatGPT login detection, Flask API behavior, real channel discovery, real transcript retrieval, a live `codex exec` structured-output run, desktop/mobile UI checks, secret scanning, and a clean-clone setup simulation.
 
-## 限制
+## Reproducibility notes
 
-- 沒有公開字幕、私人影片、地區限制或 YouTube 阻擋時無法摘要。
-- 頻道頁解析依賴 YouTube 目前的公開頁面格式；上游改版後可能需要更新 `yt-dlp`。
-- AI 摘要可能遺漏或誤解內容，重要數字與投資資訊必須回看原片。
-- 大量影片會產生 OpenAI API 成本。
+The app cannot remove every external dependency: users still need Python, internet access, a YouTube video with public transcripts, and ChatGPT Codex access. The launcher turns the remaining setup into one guided entry point and prints actionable errors when a prerequisite is missing.
 
-## 實作心得與後續方向
+YouTube may change its public page format. The project pins a tested `yt-dlp` version; update it when upstream extraction changes.
 
-真正困難的不是呼叫模型，而是把「網址種類、直播排除、字幕語言、錯誤回饋、秘密資料」變成穩定的產品邊界。未來可加入字幕快取、摘要匯出、模型與影片數量設定、時間戳引用，以及完全本機模型模式。
+## Lessons learned
+
+The first version made model access easy for developers but awkward for Plus users without API keys. Codex CLI solved the entitlement problem, while introducing a different engineering challenge: executable discovery on Windows. The robust solution is to test candidates rather than trust `PATH`, prefer the npm shim when available, and keep authentication inside the official CLI.
+
+## Future improvements
+
+- Timestamp citations for every key point
+- Markdown and PDF exports
+- Transcript/result caching
+- macOS and Linux launch scripts
+- Optional local-model backend
 
 ## License
 

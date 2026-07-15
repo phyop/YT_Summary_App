@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "overview": {"type": "string"},
+    "videos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "video_id": {"type": "string"},
+          "title": {"type": "string"},
+          "summary": {"type": "string"},
+          "points": {"type": "array", "items": {"type": "string"}, "minItems": 3, "maxItems": 6},
+          "takeaway": {"type": "string"}
+        },
+        "required": ["video_id", "title", "summary", "points", "takeaway"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["overview", "videos"],
+  "additionalProperties": false
+}

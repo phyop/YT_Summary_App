@@ -1,106 +1,122 @@
-# Medium 發布稿
+# Medium publishing package
 
-## 五個標題選項
+## Title options
 
-1. 我把 YouTube 影片摘要流程，做成一個按 Enter 就能用的繁中 App
-2. 從四支 Bitcoin 影片到桌面工具：一個 AI 摘要 App 的誕生
-3. 不只呼叫 GPT：打造可靠 YouTube 摘要工具真正困難的五件事
-4. 如何用 Flask、公開字幕與 OpenAI 做出好讀的繁中影片筆記
-5. 把「幫我摘要最新影片」產品化：從資料取得、介面到安全發布
+1. Removing the API Key Barrier: Rebuilding a YouTube Summarizer Around Codex CLI
+2. From API Keys to ChatGPT Login: A More Human Onboarding Flow for an AI App
+3. What It Took to Make an AI YouTube Summarizer Reproducible After Git Clone
+4. Building a Keyless Traditional Chinese YouTube Summarizer with Codex CLI
+5. The Hard Part Wasn't Summarization: It Was Authentication, Windows, and Reproducibility
 
-## SEO 設定
+## SEO
 
-- **SEO title：** 用 Python 與 OpenAI 打造 YouTube 繁體中文摘要 App
-- **Meta description：** 從一次 YouTube 頻道摘要任務出發，完整記錄如何使用 Flask、yt-dlp、公開字幕與 OpenAI Responses API，做出可雙擊啟動、重視閱讀體驗與安全邊界的繁中摘要工具。
-- **URL slug：** `build-youtube-traditional-chinese-summary-app`
-- **Tags：** Artificial Intelligence、Python、OpenAI、YouTube、Product Development
+- **SEO title:** Build a Keyless YouTube Summarizer with ChatGPT and Codex CLI
+- **Meta description:** A practical engineering story about replacing OpenAI API-key onboarding with ChatGPT-authenticated Codex CLI, handling Windows executable conflicts, securing transcript input, and validating a clean-clone setup.
+- **URL slug:** `keyless-youtube-summarizer-codex-cli`
+- **Tags:** Artificial Intelligence, Python, OpenAI, YouTube, Developer Experience
 
 ---
 
-# 我把 YouTube 影片摘要流程，做成一個按 Enter 就能用的繁中 App
+# Removing the API Key Barrier: Rebuilding a YouTube Summarizer Around Codex CLI
 
-一開始，需求其實很普通：找出某位 YouTube 創作者最新的幾支影片，排除直播，再整理成繁體中文摘要。
+The first version of my YouTube summary app worked. A user could paste a video, playlist, or channel URL, press Enter, and receive a well-structured Traditional Chinese summary. The application discovered videos, skipped live streams, retrieved public transcripts, sent them to a model, and displayed the result in a reading-focused interface.
 
-真正動手後，我很快發現這不是一道單純的「請 AI 幫我摘要」問題。我要先確認什麼叫最新影片、辨識網址是單片還是頻道、避開直播、取得字幕、保留作者語氣中的不確定性，最後還要把結果排成真的有人願意讀完的樣子。
+Then I looked at the first-run experience through a non-developer's eyes.
 
-當同一套流程第二次出現時，最自然的問題就是：能不能把它變成一個 App？
+The page asked for an OpenAI API key.
 
-## 起點：摘要不是只有一個模型呼叫
+For an engineer who already uses the API platform, that request is ordinary. For a ChatGPT Plus user, it creates an immediate wall. A ChatGPT subscription and API billing are separate products. Someone may have full access to Codex through ChatGPT while having no API key, no API billing setup, and no reason to understand either one. The app had reduced a long video into a short summary, but it had replaced that complexity with an authentication lesson.
 
-使用者看到的動作只有兩步：貼網址，按 Enter。但在這兩步背後，至少有五個階段：
+I decided to build a second edition around Codex CLI. The goal was not merely to remove a text field. The goal was to make a public repository that another person could clone, launch, authenticate with a ChatGPT account, and use without copying secrets or learning an elaborate setup ritual.
 
-1. 驗證網址，避免任意網站被後端處理。
-2. 判斷是影片、播放清單還是頻道。
-3. 找出真正可處理的影片，排除直播與無效項目。
-4. 取得公開字幕並選擇適合的語言。
-5. 把字幕交給模型，要求穩定的 JSON 結構，再轉成閱讀介面。
+## Start with the official authentication contract
 
-如果任何一層失敗，單靠漂亮的提示詞都救不了產品。
+Before changing code, I verified the current Codex behavior against OpenAI's documentation. Codex CLI supports browser-based ChatGPT sign-in through `codex login`. After login, the CLI caches and reuses the session. Non-interactive tasks run through `codex exec`, which prints progress to stderr and the final answer to stdout. A fixed prompt can be supplied as an argument while piped stdin becomes additional context.
 
-## 第一個除錯點：YouTube 頁面不是穩定 API
+That last detail shaped the architecture. The application could keep its summarization instruction under developer control and send transcript JSON through stdin. The user's ChatGPT-managed Codex entitlement would handle model access. No API key would pass through the browser, Flask process, environment file, or Git repository.
 
-頻道頁是為人類瀏覽器設計的，不是為程式保證的資料介面。直接解析 HTML 很容易因前端改版失效，也很難一致處理影片、Shorts、直播與播放清單。
+This is not offline inference. Transcript text still goes to Codex and OpenAI. The improvement is an authentication and onboarding improvement, not a claim that data never leaves the machine.
 
-最後我選擇 `yt-dlp` 作為影片探索層。它負責把不同 YouTube 網址正規化成影片 metadata；對頻道或清單，程式只取前幾個項目，再跳過 `is_live` 與 `is_upcoming`。這讓「最新四支非直播影片」成為清楚而可測試的規則，而不是藏在畫面上的人工作業。
+## Preserve the working version before replacing anything
 
-不過這也帶來一個重要限制：YouTube 隨時可能改變頁面或存取策略。因此 README 沒有假裝工具永遠穩定，而是明確建議上游變動時更新 `yt-dlp`。
+The original API implementation had value. Some users prefer explicit API billing, service accounts, or programmatic deployment. Deleting it would turn a product improvement into a compatibility break.
 
-## 第二個除錯點：字幕才是摘要品質的地基
+I reorganized the repository into two complete folders. The recommended `codex-cli` folder contains the new ChatGPT-authenticated workflow. The `legacy-api` folder preserves the original implementation. A root README explains the difference before users choose a path.
 
-有標題，不代表知道影片說了什麼；有說明欄，也不代表掌握完整論點。要避免模型根據標題腦補，就必須把公開字幕當成主要證據。
+This structure also improves support. When someone reports a problem, the first question is no longer, "Which authentication method did you configure inside the same code path?" Each edition has a clear contract and independent launcher.
 
-程式透過 YouTube Transcript API 依序尋找繁體中文、中文與英文字幕。如果都沒有，就嘗試影片提供的第一種字幕。取得字幕後再清理換行並交給模型。
+## The Windows executable trap
 
-這裡我刻意選擇「沒有字幕就清楚失敗」，而不是要求模型看標題猜摘要。對使用者來說，少做一支影片可能令人失望；但一篇流暢、看似合理、實際上憑空生成的摘要更危險。
+The first local test exposed a problem that a unit test would not have predicted. The command `codex` existed on the machine, but running it from an external process returned Access Denied. Windows had resolved it to an executable inside the packaged Codex desktop app under WindowsApps. The desktop app could use that binary internally, but a separate Flask application could not assume permission to execute it.
 
-## 第三個除錯點：模型輸出必須能被介面信任
+Installing the official npm package produced a working CLI shim under the user's npm directory. Unfortunately, the inaccessible WindowsApps entry still appeared earlier in command discovery. A naive `shutil.which("codex")` implementation would keep selecting the wrong file.
 
-若模型自由輸出 Markdown，前端很難穩定辨識哪一段是標題、重點或結論。於是摘要層要求固定 JSON：整體觀察、影片陣列、段落摘要、三到六個重點，以及一句話結論。
+The fix was capability-based discovery rather than path-based trust. The application builds an ordered list of candidates: an explicit `CODEX_CLI_PATH`, the npm shim under the user's application-data directory, the normal PATH result, and finally an `npx` fallback. It executes `--version` on each candidate with a short timeout. Access errors and nonzero exits are skipped. The first candidate that proves it can run becomes the selected CLI.
 
-提示詞同時要求三件事：只根據字幕、保留重要數字與不確定語氣、不要給投資建議。這對市場分析影片特別重要。「可能」「推測」「主觀機率」不能在摘要過程中被改寫成確定預言。
+This small loop is one of the most important pieces of the project. It converts a machine-specific failure into a predictable fallback.
 
-後端解析 JSON 後，再把可信的原始 metadata——影片網址、片長、日期與觀看次數——補回結果。這種分工很重要：模型負責語意整理，程式負責確定性資料。
+## A launcher should be an onboarding product
 
-## 第四個除錯點：API Key 不該成為公開專案的定時炸彈
+The Windows `start.cmd` file now does more than run Python. It checks for Python, creates an isolated virtual environment, installs pinned dependencies, finds a usable Codex CLI, and installs the official `@openai/codex` package when needed. It then runs `codex login status`. If no valid session exists, it starts `codex login` and lets the official browser flow handle credentials.
 
-公開 GitHub 專案最不能犯的錯，是把真實 API Key 寫進程式、範例檔或 commit history。
+Only after those steps succeed does the launcher start Flask and open the local page.
 
-這個 App 提供兩種方式：使用 `OPENAI_API_KEY` 環境變數，或在畫面上暫時輸入。前端不使用 localStorage，後端不寫入檔案或資料庫；本機 Flask 也只監聽 `127.0.0.1`。
+Failures are expressed as actions. Missing Python points to the Python download. Missing npm points to Node.js LTS. An interrupted installation asks the user to run the launcher again. The application never asks the user to locate, paste, or save an access token.
 
-這並不代表資料完全不離開電腦。字幕仍會送到 OpenAI 產生摘要，所以安全說明必須誠實揭露資料流，而不是只說「本機 App」就讓人誤以為所有推論都離線完成。
+There is still a prerequisite boundary. A launcher cannot legally or reliably install every system dependency without consent. Users need Python, internet access, and a ChatGPT workspace with Codex access. Node.js is necessary only when a usable Codex CLI is unavailable. The difference is that these requirements are now detected in sequence instead of being scattered across documentation.
 
-## 第五個除錯點：好摘要也可能因排版而難讀
+## Treat transcripts as untrusted input
 
-最初的內容是一串普通段落。資訊完整，卻缺乏閱讀節奏。最後的介面把結果拆成四個層次：跨影片整體觀察、編號影片卡、可掃讀的重點清單，以及視覺上突出的單句結論。
+YouTube transcripts are external content. A video could contain sentences that look like instructions to an agent. The transcript should influence the summary, but it should never override the application's task.
 
-我選擇偏紙張質感的暖色背景、墨綠文字、橘色提示與鼠尾草綠區塊，而不是典型的藍紫 AI 漸層。標題使用較具編輯感的襯線字，內文則維持繁中螢幕閱讀清楚的無襯線字。行動版重新排列輸入與內容欄位，鍵盤使用者可以直接按 Enter。
+The new runner passes a fixed prompt as the `codex exec` argument. That prompt explicitly labels stdin JSON as untrusted material and forbids following instructions found inside transcripts. The transcript bundle is piped separately through stdin.
 
-介面設計不是最後才加上的裝飾。當輸出是長文字時，閱讀體驗本身就是核心功能。
+Codex runs with a read-only sandbox and an ephemeral session. User configuration and project execution rules are ignored for this controlled summarization call. A JSON Schema constrains the final response to an overview and a list of videos, each with a title, summary, three to six points, and a takeaway.
 
-## 最終架構為什麼有效
+The model handles semantic compression. Ordinary Python code remains responsible for trusted metadata such as original URLs, duration, upload date, and view count. This separation prevents the model from inventing fields the extractor already knows.
 
-整個系統維持很小的責任邊界：Flask 處理本機 HTTP 與錯誤回應；`youtube.py` 管理網址、metadata 和字幕；`summarizer.py` 管理提示詞與模型結果；前端只負責提交與安全渲染。
+## Reproducing the app from a clean clone
 
-這使測試不必真的花 API 費用。API 測試 mock 掉摘要函式，驗證缺少網址、缺少金鑰、健康檢查與成功回應；網址測試則用參數化案例覆蓋一般影片、短網址與 Shorts。
+Testing the existing development folder is not enough. It may contain a virtual environment, cached packages, CLI credentials, or ignored files that silently make the app work.
 
-發布前，還需要跑語法編譯、單元測試、秘密掃描、`git diff --check` 與 Git 狀態檢查。AI 可以加速實作與文件產生，但外部發布、帳號操作與風險判斷仍需要明確的人類授權。這個專案的完成不是「全自動 AI 寫完並自行上線」，而是人在目標與發布權限上做決定，AI 協助完成工程流程。
+I therefore treated clean-clone reproduction as a product requirement. The simulation starts from a new clone, verifies that no `.env`, API key, virtual environment, cache, or credential file is tracked, and builds a fresh Python environment. It installs dependencies from the committed requirements file, runs unit tests and compilation checks, then verifies real YouTube channel discovery and public transcript retrieval.
 
-## 我學到的三件事
+The test suite mocks model work where appropriate, but a separate authenticated integration test runs a minimal schema-constrained `codex exec` request. That catches command-line flags, login reuse, encoding, output-file handling, and JSON parsing problems that mocks cannot see.
 
-第一，AI App 的可靠度通常由模型之外的部分決定。網址驗證、上游資料、錯誤訊息與秘密管理，才是使用者真正會撞上的地方。
+The clean environment also revealed why executable discovery had to test candidates. Reproduction is not just a release ceremony; it is a debugging technique for hidden assumptions.
 
-第二，結構化輸出要搭配責任分工。不要讓模型生成已經能由程式確定的網址與 metadata，也不要讓前端猜測自然語言的段落結構。
+## Keeping the interface focused
 
-第三，公開發布不是按下 push 而已。README 面向工程師與使用者；Medium 面向故事與學習；兩者內容不應只是換個格式貼上。
+Removing the API key field simplified the page. A status banner now tells the user whether Codex CLI is signed in with ChatGPT. The rest of the interaction stays deliberately small: paste a URL, click the button or press Enter, and read.
 
-## 還能往哪裡走
+The output preserves the editorial hierarchy from the first version: a cross-video overview, numbered video sections, source links, metadata, key points, and a highlighted one-sentence takeaway. The layout remains responsive at mobile width and avoids horizontal overflow.
 
-下一步可以加入時間戳引用，讓每個重點直接跳回原片；也可以提供 Markdown 或 PDF 匯出、字幕快取、自訂影片數量與模型。更進一步，還能建立跨影片觀點追蹤：某位創作者三個月前的判斷，後來是否改變？哪些預測已經到期？
+Good developer experience and good reading experience are related. Both reduce the number of decisions a person must make before reaching value.
 
-如果要處理敏感內容，則應加入完全本機的語音辨識與語言模型後端，讓資料不離開電腦。
+## What changed in my view of AI application architecture
 
-## 結語
+This rebuild reinforced several lessons.
 
-從「幫我摘要四支影片」到一個可雙擊啟動的 App，差別不在多寫了幾行 OpenAI 呼叫，而是把一次性的研究流程變成一套清楚、可測試、能解釋失敗、也能安全公開的產品。
+First, product access is part of architecture. API keys, subscription entitlements, browser login, and enterprise access tokens are not interchangeable details. Choosing the wrong authentication surface can make a technically correct app unusable for its intended audience.
 
-貼網址和按 Enter 只花一秒。真正值得投入的，是讓那一秒之後發生的每件事都可靠。
+Second, detect capabilities rather than assuming installation paths. A file can exist and still be unusable. A command can resolve and still fail. Run the smallest safe proof, handle the result, and keep a fallback.
+
+Third, external text is an input security boundary. Prompt injection is not limited to chatbots browsing suspicious websites. A transcript, document, log file, or issue description can contain imperative language. Separate trusted instructions from untrusted context and minimize agent permissions.
+
+Fourth, schema-constrained output is a contract between AI and software. It makes rendering predictable, testing meaningful, and failure visible.
+
+Finally, a public repository is not reproducible because its author can run it. It is reproducible when a new directory, a new environment, and a documented user can reach the same behavior without access to the author's hidden state.
+
+## Remaining limitations and next steps
+
+The app depends on public transcripts. Private videos, regional restrictions, missing captions, and YouTube extraction changes can still block a summary. Codex usage is subject to the signed-in user's plan, workspace policy, and rate limits. Large channels or long transcripts take time.
+
+The next improvements are timestamp citations, transcript caching, Markdown and PDF export, macOS and Linux launchers, and an optional local-model backend. A stronger evaluation set could compare summaries against human-written references and verify that numbers and uncertainty survive compression.
+
+## Conclusion
+
+The visible change was the disappearance of an API key field. The real work happened underneath: choosing the correct authentication surface, preserving the legacy path, handling Windows executable conflicts, constraining an agent, and reproducing the experience from a clean clone.
+
+The resulting application is not configuration-free. No useful local AI tool truly is. It is configuration-light in the places that matter: one launcher, one official browser login, one URL field, and no secret copied into a public project.
+
+That is a better definition of user-friendly AI software than simply making the model call succeed.

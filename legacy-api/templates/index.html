@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YT Summary App</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">YOUTUBE RESEARCH COMPANION</div>
+      <h1>Turn videos into<br><em>readable notes.</em></h1>
+      <p>Paste a video, playlist, or channel URL. Channel pages summarize the newest 4 non-live videos.</p>
+    </header>
+
+    <section class="input-card" aria-label="Summary input">
+      <label for="url">YouTube URL</label>
+      <div class="input-row">
+        <input id="url" type="url" inputmode="url" placeholder="https://www.youtube.com/@channel/videos" autocomplete="off">
+        <button id="submit" type="button">Summarize <span>-></span></button>
+      </div>
+      <details>
+        <summary>API settings</summary>
+        <label for="apiKey">OpenAI API key, kept only in page memory</label>
+        <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off">
+      </details>
+      <p id="status" class="status" role="status"></p>
+    </section>
+
+    <section id="results" class="results" aria-live="polite"></section>
+  </main>
+  <footer>Public transcripts x AI summaries. Verify important details against the original video.</footer>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
