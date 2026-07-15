@@ -22,9 +22,9 @@ def create_app() -> Flask:
         url = str(payload.get("url", "")).strip()
         api_key = str(payload.get("apiKey", "")).strip() or os.getenv("OPENAI_API_KEY", "")
         if not url:
-            return jsonify({"error": "請貼上 YouTube 網址。"}), 400
+            return jsonify({"error": "Please paste a YouTube URL."}), 400
         if not api_key:
-            return jsonify({"error": "請輸入 OpenAI API Key，或先設定 OPENAI_API_KEY。"}), 400
+            return jsonify({"error": "Enter an OpenAI API key or set OPENAI_API_KEY."}), 400
         try:
             result = summarize_url(url, api_key=api_key)
             return jsonify(result)
@@ -32,7 +32,7 @@ def create_app() -> Flask:
             return jsonify({"error": str(exc)}), 400
         except Exception:
             app.logger.exception("Unexpected summarization error")
-            return jsonify({"error": "處理影片時發生未預期錯誤，請稍後再試。"}), 500
+            return jsonify({"error": "Unexpected error while processing the video. Please try again."}), 500
 
     @app.get("/api/health")
     def health():

@@ -16,7 +16,7 @@ function formatDuration(seconds) {
 
 function formatViews(value) {
   if (!value) return '';
-  return new Intl.NumberFormat('zh-TW', { notation: 'compact' }).format(value) + ' 次觀看';
+  return `${new Intl.NumberFormat('en', { notation: 'compact' }).format(value)} views`;
 }
 
 function render(data) {
@@ -25,7 +25,7 @@ function render(data) {
       <div class="number">${String(index + 1).padStart(2, '0')}</div>
       <div class="content">
         <a class="title" href="${escapeHtml(video.url)}" target="_blank" rel="noopener">${escapeHtml(video.title)}</a>
-        <div class="meta">${[formatDuration(video.duration), formatViews(video.view_count)].filter(Boolean).join(' · ')}</div>
+        <div class="meta">${[formatDuration(video.duration), formatViews(video.view_count)].filter(Boolean).join(' | ')}</div>
         <p class="summary">${escapeHtml(video.summary)}</p>
         <ul>${(video.points || []).map(point => `<li>${escapeHtml(point)}</li>`).join('')}</ul>
         <blockquote>${escapeHtml(video.takeaway)}</blockquote>
@@ -33,29 +33,36 @@ function render(data) {
     </article>`).join('');
 
   results.innerHTML = `
-    <div class="overview"><span>整體觀察</span><p>${escapeHtml(data.overview)}</p></div>
+    <div class="overview"><span>Overview</span><p>${escapeHtml(data.overview)}</p></div>
     ${cards}
     <p class="disclaimer">${escapeHtml(data.disclaimer)}</p>`;
 }
 
 async function summarize() {
   const url = urlInput.value.trim();
-  if (!url) { status.textContent = '請先貼上 YouTube 網址。'; urlInput.focus(); return; }
+  if (!url) {
+    status.textContent = 'Paste a YouTube URL first.';
+    urlInput.focus();
+    return;
+  }
   submitButton.disabled = true;
   results.innerHTML = '';
-  status.innerHTML = '<span class="spinner"></span> 正在讀取字幕與整理重點，頻道網址可能需要幾分鐘…';
+  status.innerHTML = '<span class="spinner"></span> Reading transcripts and preparing the summary. Channel URLs may take a few minutes...';
   try {
     const response = await fetch('/api/summarize', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, apiKey: apiKeyInput.value.trim() })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '無法完成摘要');
-    status.textContent = `完成，共整理 ${data.videos?.length || 0} 支影片。`;
+    if (!response.ok) throw new Error(data.error || 'Unable to complete the summary.');
+    status.textContent = `Done. Summarized ${data.videos?.length || 0} video(s).`;
     render(data);
   } catch (error) {
     status.textContent = error.message;
-  } finally { submitButton.disabled = false; }
+  } finally {
+    submitButton.disabled = false;
+  }
 }
 
 submitButton.addEventListener('click', summarize);

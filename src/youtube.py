@@ -24,7 +24,7 @@ class Video:
 def validate_youtube_url(url: str) -> None:
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"} or parsed.hostname not in YOUTUBE_HOSTS:
-        raise ValueError("目前只支援有效的 YouTube 網址。")
+        raise ValueError("Only valid YouTube URLs are supported.")
 
 
 def video_id_from_url(url: str) -> str | None:
@@ -60,7 +60,7 @@ def discover_videos(url: str, limit: int = 4) -> list[Video]:
         if not entry or entry.get("live_status") in {"is_live", "is_upcoming"}:
             continue
         video_id = entry.get("id")
-        title = entry.get("title") or "未命名影片"
+        title = entry.get("title") or "Untitled video"
         if not video_id or title == "[Private video]":
             continue
         videos.append(
@@ -76,7 +76,7 @@ def discover_videos(url: str, limit: int = 4) -> list[Video]:
         if len(videos) == limit:
             break
     if not videos:
-        raise ValueError("找不到可摘要的公開影片。請確認網址與影片權限。")
+        raise ValueError("No public videos were available for summarization. Check the URL and permissions.")
     return videos
 
 
@@ -86,7 +86,7 @@ def _metadata(url: str, video_id: str) -> Video:
         info = ydl.extract_info(url, download=False)
     return Video(
         video_id=video_id,
-        title=info.get("title") or "未命名影片",
+        title=info.get("title") or "Untitled video",
         url=f"https://www.youtube.com/watch?v={video_id}",
         duration=info.get("duration"),
         upload_date=info.get("upload_date"),
@@ -104,5 +104,5 @@ def transcript(video_id: str) -> str:
     snippets = selected.fetch()
     text = " ".join(item.text.replace("\n", " ") for item in snippets)
     if not text.strip():
-        raise ValueError("影片沒有可讀取的字幕。")
+        raise ValueError("The video does not have a readable transcript.")
     return text
