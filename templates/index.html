@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>觀影筆記｜YouTube 繁中摘要</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">YOUTUBE RESEARCH COMPANION</div>
+      <h1>把影片，整理成<br><em>讀得完的筆記。</em></h1>
+      <p>貼上單支影片、播放清單或頻道網址。頻道會自動整理最新 4 支非直播影片。</p>
+    </header>
+
+    <section class="input-card" aria-label="摘要輸入">
+      <label for="url">YouTube 網址</label>
+      <div class="input-row">
+        <input id="url" type="url" inputmode="url" placeholder="https://www.youtube.com/@channel/videos" autocomplete="off">
+        <button id="submit" type="button">開始整理 <span>↗</span></button>
+      </div>
+      <details>
+        <summary>API 設定</summary>
+        <label for="apiKey">OpenAI API Key（僅保留於本頁記憶體）</label>
+        <input id="apiKey" type="password" placeholder="sk-…" autocomplete="off">
+      </details>
+      <p id="status" class="status" role="status"></p>
+    </section>
+
+    <section id="results" class="results" aria-live="polite"></section>
+  </main>
+  <footer>公開字幕 × AI 整理・請回看原片核實重要資訊</footer>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
