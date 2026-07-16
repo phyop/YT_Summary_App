@@ -1,22 +1,3 @@
-# Medium publishing package
-
-## Title options
-
-1. Removing the API Key Barrier: Rebuilding a YouTube Summarizer Around Codex CLI
-2. From API Keys to ChatGPT Login: A More Human Onboarding Flow for an AI App
-3. What It Took to Make an AI YouTube Summarizer Reproducible After Git Clone
-4. Building a Keyless Traditional Chinese YouTube Summarizer with Codex CLI
-5. The Hard Part Wasn't Summarization: It Was Authentication, Windows, and Reproducibility
-
-## SEO
-
-- **SEO title:** Build a Keyless YouTube Summarizer with ChatGPT and Codex CLI
-- **Meta description:** A practical engineering story about replacing OpenAI API-key onboarding with ChatGPT-authenticated Codex CLI, handling Windows executable conflicts, securing transcript input, and validating a clean-clone setup.
-- **URL slug:** `keyless-youtube-summarizer-codex-cli`
-- **Tags:** Artificial Intelligence, Python, OpenAI, YouTube, Developer Experience
-
----
-
 # Removing the API Key Barrier: Rebuilding a YouTube Summarizer Around Codex CLI
 
 The first version of my YouTube summary app worked. A user could paste a video, playlist, or channel URL, press Enter, and receive a well-structured Traditional Chinese summary. The application discovered videos, skipped live streams, retrieved public transcripts, sent them to a model, and displayed the result in a reading-focused interface.

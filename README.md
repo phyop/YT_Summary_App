@@ -4,8 +4,22 @@ A Windows-friendly local app that turns a YouTube video, playlist, or a channel'
 
 The repository contains two complete implementations:
 
-- **`codex-cli/` — recommended:** no OpenAI API key. It uses Codex CLI and the user's ChatGPT account.
-- **`legacy-api/` — archived:** the original OpenAI API version for users who prefer usage-based API billing.
+- **`codex-cli/` recommended:** no OpenAI API key. It uses Codex CLI and the user's ChatGPT account.
+- **`legacy-api/` archived:** the original OpenAI API version for users who prefer usage-based API billing.
+
+## Project overview
+
+The app started as a conventional API-key summarizer and became a developer-experience project. The core product question was not only "Can a model summarize a transcript?" It was "Can another person clone this repository, launch it on Windows, authenticate with the account they already use, and get a useful result without copying secrets into the app?"
+
+The recommended implementation uses Codex CLI as the model access boundary. The Flask app remains responsible for YouTube discovery, transcript retrieval, schema validation, and presentation. Codex handles the model call through its own authenticated CLI session.
+
+## What this demonstrates
+
+- Product thinking around first-run onboarding and account boundaries.
+- Defensive handling of untrusted transcript text.
+- Windows-specific executable discovery for Codex CLI.
+- Clean-clone reproducibility checks instead of relying on a warm development folder.
+- Separation between a recommended keyless implementation and an archived API-key implementation.
 
 ## Use cases
 
@@ -41,20 +55,20 @@ The fixed summarization instruction is passed as the `codex exec` prompt. Transc
 
 ```text
 .
-├─ codex-cli/             # Recommended, ChatGPT-authenticated version
-│  ├─ app.py
-│  ├─ start.cmd           # Setup, login, and launch
-│  ├─ summary-schema.json
-│  ├─ src/
-│  ├─ static/
-│  ├─ templates/
-│  └─ tests/
-├─ legacy-api/            # Original API-key version
-├─ docs/
-│  ├─ medium-article.md
-│  └─ portfolio.md
-├─ LICENSE
-└─ README.md
+|-- codex-cli/             # Recommended, ChatGPT-authenticated version
+|   |-- app.py
+|   |-- start.cmd          # Setup, login, and launch
+|   |-- summary-schema.json
+|   |-- src/
+|   |-- static/
+|   |-- templates/
+|   `-- tests/
+|-- legacy-api/            # Original API-key version
+|-- docs/
+|   |-- medium-article.md
+|   `-- portfolio.md
+|-- LICENSE
+`-- README.md
 ```
 
 ## Fastest Windows setup
